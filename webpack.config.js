@@ -196,6 +196,26 @@ const options = {
           to: path.join(__dirname, 'build'),
           force: true,
         },
+        {
+          from: 'src/assets/images/brand-icon.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/images/icon-16.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/images/icon-32.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
+        {
+          from: 'src/assets/images/icon-48.png',
+          to: path.join(__dirname, 'build'),
+          force: true,
+        },
       ],
     }),
     new HtmlWebpackPlugin({
