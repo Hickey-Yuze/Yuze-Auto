@@ -13,7 +13,14 @@
 - ♻️ **回收站**：删除的工作流可还原（保留 30 天）
 - 🖼️ **弹窗壁纸**：自定义弹窗背景，支持裁剪调整与实时预览
 
-## 本地构建
+## 下载安装（无需打包）
+
+到 [Releases](https://github.com/Hickey-Yuze/Yuze-Auto/releases) 下载最新的 `Yuze-Auto-v*.zip`，解压后：
+
+1. 打开 `chrome://extensions`，右上角开启「开发者模式」
+2. 点「加载已解压的扩展程序」，选择解压出的文件夹
+
+## 本地构建（二次开发）
 
 ```bash
 npm install --legacy-peer-deps
