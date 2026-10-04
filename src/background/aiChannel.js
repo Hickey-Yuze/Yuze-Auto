@@ -13,7 +13,6 @@
  */
 import browser from 'webextension-polyfill';
 import { nanoid } from 'nanoid';
-import { parseJSON } from '@/utils/helper';
 import dbLogs from '@/db/logs';
 import BackgroundWorkflowUtils from './BackgroundWorkflowUtils';
 
@@ -260,7 +259,8 @@ async function pollOnce() {
 
     state.failures = 0;
 
-    const commands = parseJSON(payload.commands, []);
+    // 桥返回的 commands 已是数组；parseJSON 对数组会 JSON.parse 失败恒返兜底，故直接判 Array
+    const commands = Array.isArray(payload.commands) ? payload.commands : [];
     for (const command of commands) {
       state.since = Math.max(state.since, command.id);
 
