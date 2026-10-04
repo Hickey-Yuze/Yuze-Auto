@@ -5,6 +5,7 @@ import dbStorage from '@/db/storage';
 import cronParser from 'cron-parser';
 import BackgroundUtils from './BackgroundUtils';
 import BackgroundWorkflowTriggers from './BackgroundWorkflowTriggers';
+import { startAiChannel } from './aiChannel';
 
 async function handleScheduleBackup() {
   try {
@@ -91,6 +92,12 @@ class BackgroundEventsListeners {
   static onAlarms(event) {
     if (event.name === 'schedule-local-backup') {
       handleScheduleBackup();
+      return;
+    }
+
+    // AI 工作流通道：alarm 周期唤醒休眠的 SW，重启轮询（幂等）
+    if (event.name === 'yuze-ai-channel') {
+      startAiChannel();
       return;
     }
 

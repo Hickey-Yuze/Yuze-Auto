@@ -19,6 +19,7 @@ import BackgroundWorkflowUtils from './BackgroundWorkflowUtils';
 
 const PY_BRIDGE_KEY = 'pythonBridgeConfig';
 const AI_CHANNEL_STATE_KEY = 'aiChannelState';
+const AI_CHANNEL_ALARM = 'yuze-ai-channel';
 const POLL_INTERVAL_MS = 2000;
 const POLL_INTERVAL_IDLE_MS = 10000;
 const EXECUTE_RESULT_TIMEOUT_MS = 120000;
@@ -162,8 +163,11 @@ async function waitForExecutionResult(workflowId, startedAt) {
   const deadline = Date.now() + EXECUTE_RESULT_TIMEOUT_MS;
 
   const sleep = () =>
+    // 轮询间隙调一次扩展 API，重置 MV3 SW 的 30s 空闲计时，防止长执行等待期间被杀
     new Promise((resolve) => {
-      setTimeout(resolve, 2000);
+      browser.storage.local.get('aiChannelEnabled').then(() => {
+        setTimeout(resolve, 2000);
+      });
     });
 
   while (Date.now() < deadline) {
@@ -304,8 +308,12 @@ async function pollLoop() {
   state.timer = setTimeout(pollLoop, delay);
 }
 
-/** 启动轮询（幂等） */
+/** 启动轮询（幂等），并注册 30s 周期 alarm 防 service worker 休眠失联 */
 export async function startAiChannel() {
+  // MV3 SW 空闲约 30s 会被杀，纯 setTimeout 轮询随之中断；
+  // 用 chrome.alarms 周期唤醒（BackgroundEventsListeners.onAlarms 回调本函数重启轮询）
+  browser.alarms.create(AI_CHANNEL_ALARM, { periodInMinutes: 0.5 });
+
   if (state.timer) return;
 
   const { [AI_CHANNEL_STATE_KEY]: saved } = await browser.storage.local.get(
