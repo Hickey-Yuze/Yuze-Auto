@@ -6,6 +6,7 @@
 //   result 为 yuze._dump() 产出的 JSON 字符串，由调用方 parseJSON 还原。
 import { parseJSON } from '@/utils/helper';
 import { sendMessage } from '@/utils/message';
+import browser from 'webextension-polyfill';
 import yuzeSource from './yuzeSource';
 
 const DEFAULT_CONFIG = { host: '127.0.0.1', port: 27182, token: '' };
@@ -95,4 +96,21 @@ export async function pingBridge() {
 
   const payload = await response.json();
   return payload; // { ok, python: "3.x.x" }
+}
+
+// ---------------------------------------------------------------------------
+// AI 工作流通道开关（background 轮询每 2s 自查 storage，无需消息通知）
+// ---------------------------------------------------------------------------
+const AI_CHANNEL_KEY = 'aiChannelEnabled';
+
+export async function getAiChannelEnabled() {
+  const { [AI_CHANNEL_KEY]: enabled } = await browser.storage.local.get(
+    AI_CHANNEL_KEY
+  );
+  return !!enabled;
+}
+
+export async function setAiChannelEnabled(enabled) {
+  await browser.storage.local.set({ [AI_CHANNEL_KEY]: !!enabled });
+  return !!enabled;
 }

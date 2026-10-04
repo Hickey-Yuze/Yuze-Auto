@@ -22,6 +22,7 @@ import BackgroundUtils from './BackgroundUtils';
 import BackgroundWorkflowUtils from './BackgroundWorkflowUtils';
 import { registerYuzeCallHandlers } from './yuzeApi';
 import { registerAiChatHandlers } from './aiChatService';
+import { startAiChannel } from './aiChannel';
 
 BackgroundOffscreen.instance.sendMessage('halo');
 
@@ -1122,3 +1123,6 @@ message.on('downloads:watch-changed', async ({ downloadId, onComplete }) => {
 automa('background', message);
 
 browser.runtime.onMessage.addListener(message.listener);
+
+// AI 工作流通道：轮询本机桥指令队列（内部自查开关，桥不可达时空转降频）
+startAiChannel();

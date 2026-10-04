@@ -152,6 +152,17 @@
       </div>
     </div>
   </div>
+  <div id="ai-channel" class="mt-12">
+    <p class="mb-1 font-semibold">AI 工作流通道（Yuze Harness 远程管理）</p>
+    <p class="mb-2 text-sm text-gray-600 dark:text-gray-200">
+      开启后扩展会轮询本机桥的指令队列，AI
+      可远程导入工作流、触发执行并读取结果。复用上方桥接配置，需先启动桥接服务。
+    </p>
+    <label class="flex cursor-pointer items-center space-x-2">
+      <ui-switch :model-value="aiChannelEnabled" @change="toggleAiChannel" />
+      <span class="text-sm">{{ aiChannelEnabled ? '已开启' : '已关闭' }}</span>
+    </label>
+  </div>
   <div id="ai-chat" class="mt-12">
     <p class="mb-1 font-semibold">
       AI 服务（OpenAI 兼容，供「AI 问答」块使用）
@@ -206,6 +217,8 @@ import {
   getBridgeConfig,
   setBridgeConfig,
   pingBridge,
+  getAiChannelEnabled,
+  setAiChannelEnabled,
 } from '@/automation/python/bridgeClient';
 import { getAiChatConfig, setAiChatConfig } from '@/automation/ai/aiChatClient';
 import PopupWallpaper from '@/components/newtab/settings/PopupWallpaper.vue';
@@ -221,6 +234,7 @@ const isLangChange = ref(false);
 const settings = computed(() => store.settings);
 
 const bridgeConfig = ref({ token: '', port: 27182 });
+const aiChannelEnabled = ref(false);
 const accentPresets = ['#16a34a', '#2563eb', '#9333ea', '#ea580c', '#dc2626'];
 const accentColor = ref('#16a34a');
 const aiChatConfig = ref({ baseUrl: '', apiKey: '', model: '' });
@@ -294,6 +308,7 @@ function selectAiProvider(label) {
 
 onMounted(async () => {
   bridgeConfig.value = await getBridgeConfig();
+  aiChannelEnabled.value = await getAiChannelEnabled();
   aiChatConfig.value = await getAiChatConfig();
   accentColor.value = await theme.getAccentColor();
 
@@ -315,6 +330,11 @@ function applyAccentColor(color) {
 
 async function updateBridgeConfig(patch) {
   bridgeConfig.value = await setBridgeConfig(patch);
+}
+
+async function toggleAiChannel(enabled) {
+  aiChannelEnabled.value = await setAiChannelEnabled(enabled);
+  toast.success(enabled ? '✅ AI 工作流通道已开启' : 'AI 工作流通道已关闭');
 }
 
 async function pingBridgeAction() {
