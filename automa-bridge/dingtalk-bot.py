@@ -123,7 +123,7 @@ class YuzeAutoBot(dingtalk_stream.ChatbotHandler):
     async def process(self, callback: dingtalk_stream.CallbackMessage):
         incoming_message = dingtalk_stream.ChatbotMessage.from_dict(callback.data)
         text = (incoming_message.text.content or "").strip()
-        print(f"[dingtalk-bot] 收到指令: {text!r}（来自 {incoming_message.sender_nick or incoming_message.sender_staff_id}）")
+        print(f"[dingtalk-bot] 收到指令: {text!r}（来自 {incoming_message.sender_nick or incoming_message.sender_staff_id}）", flush=True)
 
         if not text or text.startswith("帮助"):
             reply = (

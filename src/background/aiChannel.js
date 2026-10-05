@@ -308,11 +308,16 @@ async function pollLoop() {
   state.timer = setTimeout(pollLoop, delay);
 }
 
-/** 启动轮询（幂等），并注册 30s 周期 alarm 防 service worker 休眠失联 */
+/** 启动轮询（幂等），并注册周期 alarm 防 service worker 休眠失联 */
 export async function startAiChannel() {
   // MV3 SW 空闲约 30s 会被杀，纯 setTimeout 轮询随之中断；
-  // 用 chrome.alarms 周期唤醒（BackgroundEventsListeners.onAlarms 回调本函数重启轮询）
-  browser.alarms.create(AI_CHANNEL_ALARM, { periodInMinutes: 0.5 });
+  // 用 chrome.alarms 周期唤醒（BackgroundEventsListeners.onAlarms 回调本函数重启轮询）。
+  // periodInMinutes 用 1：部分 Chrome 版本对 <1 的周期会拒绝或静默丢弃，导致 SW 睡死
+  try {
+    browser.alarms.create(AI_CHANNEL_ALARM, { periodInMinutes: 1 });
+  } catch (err) {
+    console.warn('[ai-channel] alarms.create failed:', err);
+  }
 
   if (state.timer) return;
 

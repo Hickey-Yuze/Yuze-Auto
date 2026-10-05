@@ -328,8 +328,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         self._send_json(404, {"ok": False, "error": "not-found"})
 
     def log_message(self, fmt, *args):  # 安静模式：只记录关键请求
-        if "/execute" in (args[0] if args else ""):
-            sys.stdout.write(f"[bridge] {self.address_string()} {fmt % args}\n")
+        line = fmt % args if args else fmt
+        if "/execute" in line or "/yuze/commands" in line:
+            sys.stdout.write(f"[bridge] {self.address_string()} {line}\n")
+            sys.stdout.flush()
 
 
 def main():
