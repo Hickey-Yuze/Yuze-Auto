@@ -33,3 +33,6 @@ getPassKey.js
 .idea
 Yuze-Auto-v*.zip
 Yuze-Bridge-v*.zip
+
+# 钉钉机器人虚拟环境
+automa-bridge/.venv/

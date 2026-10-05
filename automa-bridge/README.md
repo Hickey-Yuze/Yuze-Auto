@@ -25,3 +25,23 @@ Automa（Yuze fork）Python 代码块的「本机桥接」通道。纯 Python �
 - 仅监听 `127.0.0.1:27182`（可用环境变量 `YUZE_BRIDGE_PORT` 覆盖端口、`YUZE_BRIDGE_TOKEN` 覆盖 token）
 
 该服务是通用 JSON 协议，DSH 等其他本地工具也可复用同一服务执行 Python 代码。
+
+## AI 工作流通道（Yuze Harness 远程管理）
+
+| 端点 | 说明 |
+| --- | --- |
+| `POST /yuze/commands` | 扩展轮询：上报工作流摘要 + 取走指令 |
+| `POST /yuze/workflows` | AI 导入工作流 `{name, description?, drawflow}` |
+| `POST /yuze/execute` | AI 触发执行 `{workflowId}` |
+| `GET /yuze/workflows` | 工作流列表快照 |
+| `GET /yuze/results?since=N` | 指令执行结果回传/查询 |
+
+## 钉钉机器人（群里 @ 触发自动化）
+
+企业内部机器人（Stream 模式，免公网 IP）：群里 @机器人「跑 <工作流名>」→ 调桥执行 → 结果回复进群。
+
+1. 钉钉开发者后台建企业内部应用 → 开启「机器人」能力（消息接收模式选 **Stream 模式**）→ 发布版本 → 把机器人拉进群
+2. 配置 `~/.automa-bridge/dingtalk.json`：`{"clientId": "<AppKey>", "clientSecret": "<AppSecret>"}`
+3. 首次运行 `./start-dingtalk-bot.command`（自动建 .venv 装 dingtalk-stream）
+
+指令：`跑 <工作流名>` / `列表` / `帮助`。
