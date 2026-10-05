@@ -22,6 +22,8 @@ import asyncio
 import json
 import os
 import sys
+import threading
+import time
 
 import dingtalk_stream
 from dingtalk_stream import AckMessage
@@ -84,24 +86,26 @@ class YuzeAutoBot(dingtalk_stream.ChatbotHandler):
         lines = [f"• {w['name']}" for w in ws]
         return "当前工作流：\n" + "\n".join(lines) + "\n\n回复「跑 工作流名」执行"
 
-    def execute_workflow(self, name):
+    def execute_workflow(self, name, incoming_message):
         # 1) 找工作流（支持模糊包含匹配）
         data = self._get("/yuze/workflows")
         ws = data.get("workflows") or []
         hits = [w for w in ws if name in (w.get("name") or "")]
         if not hits:
-            return f"没找到包含「{name}」的工作流，回复「列表」查看全部"
+            self.reply_text(f"没找到包含「{name}」的工作流，回复「列表」查看全部", incoming_message)
+            return
         if len(hits) > 1:
             names = "、".join(w["name"] for w in hits[:5])
-            return f"匹配到多条，请用更完整的名字：{names}"
+            self.reply_text(f"匹配到多条，请用更完整的名字：{names}", incoming_message)
+            return
 
         workflow = hits[0]
         # 2) 入队执行
         cmd = self._post("/yuze/execute", {"workflowId": workflow["id"]})
         command_id = cmd["commandId"]
-        # 3) 轮询结果
-        deadline = asyncio.get_event_loop().time() + RESULT_TIMEOUT_S
-        while asyncio.get_event_loop().time() < deadline:
+        # 3) 轮询结果（后台线程内，同步 sleep）
+        deadline = time.monotonic() + RESULT_TIMEOUT_S
+        while time.monotonic() < deadline:
             results = self._get(f"/yuze/results?since={command_id - 1}").get("results") or []
             hit = [r for r in results if r.get("commandId") == command_id]
             if hit:
@@ -109,10 +113,12 @@ class YuzeAutoBot(dingtalk_stream.ChatbotHandler):
                 if entry.get("ok"):
                     detail = entry.get("result") or {}
                     status = detail.get("status", "success")
-                    return f"✅ 「{workflow['name']}」执行完成：{status}"
-                return f"❌ 「{workflow['name']}」执行失败：{entry.get('error', '未知错误')}"
-            asyncio.sleep(3)
-        return f"⏳ 「{workflow['name']}」{RESULT_TIMEOUT_S} 秒内未等到执行结果（可能还在跑，稍后回复「列表」确认）"
+                    self.reply_text(f"✅ 「{workflow['name']}」执行完成：{status}", incoming_message)
+                else:
+                    self.reply_text(f"❌ 「{workflow['name']}」执行失败：{entry.get('error', '未知错误')}", incoming_message)
+                return
+            time.sleep(3)
+        self.reply_text(f"⏳ 「{workflow['name']}」{RESULT_TIMEOUT_S} 秒内未等到执行结果（可能还在跑，稍后再试）", incoming_message)
 
     async def process(self, callback: dingtalk_stream.CallbackMessage):
         incoming_message = dingtalk_stream.ChatbotMessage.from_dict(callback.data)
@@ -125,16 +131,26 @@ class YuzeAutoBot(dingtalk_stream.ChatbotHandler):
                 "• 跑 <工作流名> —— 执行工作流并回传结果\n"
                 "• 列表 —— 查看全部工作流"
             )
+            self.reply_text(reply, incoming_message)
         elif text.startswith("列表"):
-            reply = self.list_workflows()
+            self.reply_text(self.list_workflows(), incoming_message)
         elif text.startswith("跑 "):
             name = text[2:].strip()
-            reply = self.execute_workflow(name) if name else "用法：跑 <工作流名>"
+            if not name:
+                self.reply_text("用法：跑 <工作流名>", incoming_message)
+            else:
+                # 后台线程执行，立即 ACK——防止长执行期间钉钉收不到确认重推消息
+                self.reply_text(f"⏳ 正在执行「{name}」，完成后回报结果", incoming_message)
+                threading.Thread(
+                    target=self.execute_workflow,
+                    args=(name, incoming_message),
+                    daemon=True,
+                ).start()
         else:
-            reply = "没看懂指令。回复「帮助」查看用法，「列表」看工作流。"
+            self.reply_text("没看懂指令。回复「帮助」查看用法，「列表」看工作流。", incoming_message)
 
-        self.reply_text(reply, incoming_message)
-        return AckMessage.STATUS_OK
+        # SDK 约定：必须返回 (code, message) 二元组；返回错误会导致不 ACK、钉钉每分钟重推
+        return AckMessage.STATUS_OK, "OK"
 
 
 def main():
