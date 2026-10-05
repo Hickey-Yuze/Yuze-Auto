@@ -38,7 +38,7 @@ HOME = os.path.expanduser("~")
 CONFIG_PATH = os.path.join(HOME, ".automa-bridge", "dingtalk.json")
 TOKEN_PATH = os.path.join(HOME, ".automa-bridge", "token")
 BRIDGE_PORT = 27182
-RESULT_TIMEOUT_S = 150
+RESULT_TIMEOUT_S = 240  # 扩展 SW 唤醒延迟(最多约62s) + 执行等待(最长120s) + 余量
 
 
 def load_config():

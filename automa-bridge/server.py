@@ -43,7 +43,9 @@ MAX_BODY = 10 * 1024 * 1024  # 10MB，防呆
 # AI 侧 POST /yuze/workflows、/yuze/execute 入队，GET /yuze/results 读结果。
 # ---------------------------------------------------------------------------
 _lock = threading.Lock()
-_command_seq = itertools.count(1)
+# 以毫秒时间戳为起点单调递增：桥重启后新指令 id 仍大于扩展持久化的消费位点（since），
+# 否则位点倒挂会导致重启后的所有指令被扩展永久过滤
+_command_seq = itertools.count(int(time.time() * 1000))
 COMMANDS: list = []   # [{id, type, payload, at}]
 RESULTS: list = []    # [{commandId, type, ok, result, error, at}]
 WORKFLOWS_CACHE: list = []  # 扩展最近一次上报的工作流摘要
